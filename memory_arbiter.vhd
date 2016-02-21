@@ -38,8 +38,8 @@ architecture behavioral of memory_arbiter is
   SIGNAL mm_initialize    : STD_LOGIC                                     := '0';
 
   Signal first_access  : std_logic :='1';
-  Signal current_access   : std_logic := 'X';
-  --Signal
+  Signal current_access   : std_logic := 'Z';
+  Signal port2_use	  : std_logic := '0';
   --Signal port2_done	  : std_logic :='1';
 
 begin
@@ -81,49 +81,55 @@ Begin
 	end if;
 end process;
 			
+Port2_inuse : Process(clk, reset, re2, we2)
+Begin
+	if( (re2 = '1' or we2 = '1') and current_access = '0') then
+		port2_use <= '1';
+	else
+		port2_use <= '0';
+	end if;
+end Process;
 
 Priority : Process(clk, reset, re1, re2, we1, we2)
 Begin
 	if reset = '1' then
 		mm_re <= '0';
 		mm_we <= '0';
+		mm_address <= 0;
+		mm_data <= (others => 'Z');
+		current_access <= 'Z';
 	elsif rising_edge(clk) and reset = '0' then
---		if ((mm_wr_done = '1' or mm_rd_ready = '1') or first_access = '1') then
---			if(first_access = '1') then
---				first_access <= '0';
---			end if;
-			if( re1 = '1') then
-				mm_re <= '1';
-				mm_we <= '0';
-				mm_address <= addr1;
-				mm_data <= data1;
-				current_access <= '1';
-			elsif( we1 = '1') then
-				mm_re <= '0';
-				mm_we <= '1';
-				mm_address <= addr1;
-				mm_data <= data1;
-				current_access <= '1';
-			elsif(re2 = '1') then
-				mm_re <= '1';
-				mm_we <= '0';
-				mm_address <= addr2;
-				mm_data <= data2;
-				current_access <= '0';
-			elsif(we2 = '1') then
-				mm_re <= '0';
-				mm_we <= '1';
-				mm_address <= addr2;
-				mm_data <= data2;
-				current_access <= '0';
-			else
-				mm_re <= '0';
-				mm_we <= '0';
-				mm_address <= 0;
-				mm_data <= (others => 'Z');
-				current_access <= 'X';
-			end if;
-		--end if;
+		if(port2_use = '0' and re1 = '1') then
+			mm_re <= '1';
+			mm_we <= '0';
+			mm_address <= addr1;
+			mm_data <= data1;
+			current_access <= '1';
+		elsif(port2_use = '0' and  we1 = '1') then
+			mm_re <= '0';
+			mm_we <= '1';
+			mm_address <= addr1;
+			mm_data <= data1;
+			current_access <= '1';
+		elsif(re2 = '1') then
+			mm_re <= '1';
+			mm_we <= '0';
+			mm_address <= addr2;
+			mm_data <= data2;
+			current_access <= '0';
+		elsif(we2 = '1') then
+			mm_re <= '0';
+			mm_we <= '1';
+			mm_address <= addr2;
+			mm_data <= data2;
+			current_access <= '0';
+		else
+			mm_re <= '0';
+			mm_we <= '0';
+			mm_address <= 0;
+			mm_data <= (others => 'Z');
+			current_access <= 'Z';
+		end if;
 	end if;
 
 end process;
